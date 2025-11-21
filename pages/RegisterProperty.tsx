@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { PropertyType } from '../types';
 import { addProperty } from '../services/storageService';
-import { generatePropertyDescription } from '../services/geminiService';
-import { Sparkles, Upload, CheckCircle, Minus, Plus } from 'lucide-react';
+import { Upload, CheckCircle, Minus, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Helper to format phone number as (XX) XXXXX-XXXX
@@ -19,7 +18,6 @@ const formatPhoneNumber = (value: string) => {
 const RegisterProperty: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [generatingAI, setGeneratingAI] = useState(false);
   const [success, setSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -64,28 +62,6 @@ const RegisterProperty: React.FC = () => {
        ...prev,
        [field]: Math.max(0, Number(prev[field]) - (field === 'area' ? 5 : 1))
     }));
-  };
-
-  const handleGenerateDescription = async () => {
-    if (!formData.type || !formData.region || !formData.area) {
-      alert("Preencha os dados básicos do imóvel (Tipo, Localização, Área) para gerar a descrição.");
-      return;
-    }
-    setGeneratingAI(true);
-    try {
-      const description = await generatePropertyDescription({
-        type: formData.type as PropertyType,
-        region: formData.region,
-        condoName: '', // Removed from form
-        bedrooms: Number(formData.bedrooms),
-        area: Number(formData.area),
-      });
-      // Truncate if necessary to fit limit
-      const truncated = description.slice(0, 280);
-      setFormData(prev => ({ ...prev, description: truncated }));
-    } finally {
-      setGeneratingAI(false);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -276,19 +252,10 @@ const RegisterProperty: React.FC = () => {
           </div>
         </div>
 
-        {/* AI Description Section */}
+        {/* Description Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
              <label className="block text-sm font-medium text-slate-700">Descrição do Imóvel</label>
-             <button 
-                type="button" 
-                onClick={handleGenerateDescription}
-                disabled={generatingAI}
-                className="flex items-center space-x-2 text-xs font-bold text-gold-600 hover:text-gold-500 uppercase tracking-wide disabled:opacity-50"
-             >
-                <Sparkles className="h-4 w-4" />
-                <span>{generatingAI ? 'Gerando com IA...' : 'Gerar Descrição com IA'}</span>
-             </button>
           </div>
           <textarea 
             name="description"
@@ -296,7 +263,7 @@ const RegisterProperty: React.FC = () => {
             maxLength={280}
             value={formData.description}
             onChange={handleInputChange}
-            placeholder="Descreva os detalhes do imóvel ou use nossa IA para criar um texto atrativo..."
+            placeholder="Descreva os detalhes do imóvel..."
             className="w-full p-3 border border-slate-300 rounded-sm focus:ring-2 focus:ring-navy-900 bg-white resize-none"
           ></textarea>
           <div className="text-right text-xs text-slate-400 mt-1">
