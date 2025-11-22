@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { PropertyType } from '../types';
 import { addProperty } from '../services/storageService';
@@ -13,6 +14,23 @@ const formatPhoneNumber = (value: string) => {
   if (numbers.length <= 2) return `(${numbers}`;
   if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
   return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+};
+
+// Helper to format currency as R$ X.XXX,XX
+const formatCurrency = (value: string) => {
+  // Remove everything that is not a digit
+  const numbers = value.replace(/\D/g, '');
+  
+  if (!numbers) return '';
+  
+  // Convert to float (divide by 100 to handle cents)
+  const amount = parseInt(numbers, 10) / 100;
+  
+  // Format using Intl
+  return amount.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
 };
 
 const RegisterProperty: React.FC = () => {
@@ -42,8 +60,8 @@ const RegisterProperty: React.FC = () => {
     }
     
     if (name === 'price') {
-       // Simple handling, could add mask here
-       setFormData(prev => ({ ...prev, [name]: value }));
+       const formatted = formatCurrency(value);
+       setFormData(prev => ({ ...prev, [name]: formatted }));
        return;
     }
 
@@ -68,17 +86,10 @@ const RegisterProperty: React.FC = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Basic price parsing
-    // Handles "1.000,00", "1000.00", "1000"
-    const cleanPriceString = formData.price.replace(/[^0-9,.]/g, ''); // remove currency symbols
-    // Naive parsing assuming PT-BR if comma exists, or simple float
-    let finalPrice = 0;
-    if (cleanPriceString) {
-        // Replace dots (thousand separators) with nothing, replace comma with dot
-        const normalized = cleanPriceString.replace(/\./g, '').replace(',', '.');
-        finalPrice = parseFloat(normalized);
-        if (isNaN(finalPrice)) finalPrice = 0;
-    }
+    // Parse currency string back to number for storage
+    // "R$ 4.500,00" -> digits "450000" -> 4500.00
+    const rawPrice = formData.price.replace(/\D/g, '');
+    const finalPrice = rawPrice ? parseInt(rawPrice, 10) / 100 : 0;
 
     // Simulate API call and image upload
     setTimeout(() => {
